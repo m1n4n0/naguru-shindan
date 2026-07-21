@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>殴性格診断</title>
+<style>
+  :root {
+    --bg-dark: #1a0b2e;
+    --pink: #ff3ea5;
+    --purple: #7b2ff7;
+    --yellow: #ffe14d;
+    --cyan: #3ef2c9;
+    --orange: #ff7a3e;
+    --card-bg: #ffffff;
+    --text-dark: #241238;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: radial-gradient(circle at 20% 10%, #3a1466 0%, var(--bg-dark) 45%, #0d0518 100%);
+    background-attachment: fixed;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* floating chaos background blobs */
+  .bg-deco {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .bg-deco span {
+    position: absolute;
+    font-size: 2.2rem;
+    opacity: 0.18;
+    animation: floaty 9s ease-in-out infinite;
+    filter: blur(0.2px);
+  }
+  .bg-deco span:nth-child(1) { top: 8%; left: 6%; animation-duration: 8s; }
+  .bg-deco span:nth-child(2) { top: 20%; right: 8%; animation-duration: 10s; animation-delay: 1s; }
+  .bg-deco span:nth-child(3) { bottom: 15%; left: 12%; animation-duration: 7s; animation-delay: 0.5s; }
+  .bg-deco span:nth-child(4) { bottom: 8%; right: 15%; animation-duration: 11s; animation-delay: 2s; }
+  .bg-deco span:nth-child(5) { top: 45%; left: 45%; animation-duration: 9.5s; animation-delay: 1.5s; }
+  .bg-deco span:nth-child(6) { top: 60%; right: 5%; animation-duration: 8.5s; }
+  .bg-deco span:nth-child(7) { top: 5%; left: 45%; animation-duration: 10.5s; animation-delay: 2.5s; }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-25px) rotate(15deg); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---- Title screen ---- */
+  .title-wrap {
+    text-align: center;
+    margin-top: 8vh;
+    animation: pop-in 0.6s ease;
+  }
+
+  .title-main {
+    font-size: 2.6rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    margin: 0;
+    background: linear-gradient(90deg, var(--pink), var(--yellow), var(--cyan), var(--purple));
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-shift 4s linear infinite, wiggle 3s ease-in-out infinite;
+    text-shadow: 0 0 30px rgba(255, 62, 165, 0.4);
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% center; }
+    100% { background-position: 300% center; }
+  }
+
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+  }
+
+  .title-sub {
+    margin-top: 14px;
+    font-size: 0.95rem;
+    color: #d9c8ff;
+    line-height: 1.7;
+  }
+
+  .start-btn {
+    margin-top: 40px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    padding: 18px 48px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #a80f5e, 0 12px 24px rgba(0,0,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    animation: pulse-btn 1.8s ease-in-out infinite;
+  }
+  .start-btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 #a80f5e, 0 4px 12px rgba(0,0,0,0.4);
+  }
+  @keyframes pulse-btn {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  @keyframes pop-in {
+    0% { opacity: 0; transform: scale(0.7) rotate(-8deg); }
+    60% { opacity: 1; transform: scale(1.08) rotate(2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  /* ---- Quiz screen ---- */
+  .screen {
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  .progress-wrap {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 6px;
+  }
+  .progress-label {
+    font-size: 0.85rem;
+    color: #d9c8ff;
+    margin-bottom: 6px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .progress-bar-bg {
+    width: 100%;
+    height: 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.15);
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.25);
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--cyan), var(--pink), var(--yellow));
+    background-size: 200% auto;
+    animation: gradient-shift 2.5s linear infinite;
+    transition: width 0.4s cubic-bezier(.4,1.6,.6,1);
+  }
+
+  .question-card {
+    width: 100%;
+    margin-top: 28px;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    border-radius: 22px;
+    padding: 28px 20px;
+    box-shadow: 0 10px 0 #4c1a8c, 0 20px 40px rgba(0,0,0,0.35);
+    animation: card-in 0.4s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  @keyframes card-in {
+    0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .question-text {
+    font-size: 1.25rem;
+    font-weight: 900;
+    margin: 0 0 22px;
+    line-height: 1.5;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .choice-btn {
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 3px solid var(--purple);
+    background: #f5f0ff;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
+  }
+  .choice-btn:hover {
+    background: linear-gradient(135deg, #fff0f8, #f0f8ff);
+    transform: translateX(4px) scale(1.02);
+  }
+  .choice-btn:active {
+    transform: scale(0.97);
+  }
+  .choice-btn.selected {
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    border-color: var(--yellow);
+  }
+
+  /* ---- Result screen ---- */
+  .result-screen {
+    align-items: center;
+  }
+
+  .result-shake {
+    animation: result-shake 0.5s ease;
+  }
+  @keyframes result-shake {
+    0% { transform: translate(0,0) rotate(0); }
+    15% { transform: translate(-8px, 4px) rotate(-3deg); }
+    30% { transform: translate(8px, -4px) rotate(3deg); }
+    45% { transform: translate(-6px, 3px) rotate(-2deg); }
+    60% { transform: translate(6px, -3px) rotate(2deg); }
+    75% { transform: translate(-3px, 2px) rotate(-1deg); }
+    100% { transform: translate(0,0) rotate(0); }
+  }
+
+  .result-header {
+    text-align: center;
+    margin-top: 20px;
+  }
+  .result-header .gacha-label {
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--yellow);
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 12px rgba(255, 225, 77, 0.6);
+  }
+
+  #result-card {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 18px;
+    border-radius: 26px;
+    padding: 36px 24px 30px;
+    position: relative;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 14px 0 rgba(0,0,0,0.25), 0 24px 50px rgba(0,0,0,0.45);
+    animation: pop-in 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  #result-card::before {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: repeating-conic-gradient(rgba(255,255,255,0.08) 0deg 10deg, transparent 10deg 20deg);
+    animation: spin-bg 12s linear infinite;
+    z-index: 0;
+  }
+
+  @keyframes spin-bg {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .card-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-emoji {
+    font-size: 3.4rem;
+    display: block;
+    margin-bottom: 8px;
+    animation: bounce-emoji 1.6s ease-in-out infinite;
+  }
+  @keyframes bounce-emoji {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.08); }
+  }
+
+  .card-title-small {
+    font-size: 0.95rem;
+    font-weight: 700;
+    opacity: 0.85;
+    margin: 0 0 4px;
+  }
+
+  .card-name {
+    font-size: 2.1rem;
+    font-weight: 900;
+    margin: 4px 0 4px;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.2);
+  }
+
+  .card-type-label {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-weight: 900;
+    background: rgba(255,255,255,0.25);
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-tags {
+    font-size: 0.85rem;
+    line-height: 1.9;
+    background: rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 14px 12px;
+    margin-top: 6px;
+  }
+
+  .card-comment {
+    margin-top: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .card-brand {
+    margin-top: 20px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    letter-spacing: 0.15em;
+  }
+
+  .name-input-wrap {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 18px;
+    text-align: center;
+  }
+  .name-input-wrap label {
+    display: block;
+    font-size: 0.8rem;
+    color: #d9c8ff;
+    margin-bottom: 6px;
+  }
+  #name-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--purple);
+    font-size: 1rem;
+    background: #fff;
+    color: var(--text-dark);
+    text-align: center;
+  }
+
+  .action-btns {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .action-btn {
+    font-size: 1rem;
+    font-weight: 900;
+    padding: 15px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.12s;
+  }
+  .action-btn:active {
+    transform: scale(0.96);
+  }
+  .btn-copy-text {
+    background: linear-gradient(135deg, var(--cyan), #1fa4c9);
+    box-shadow: 0 6px 0 #157a92;
+  }
+  .btn-copy-image {
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    box-shadow: 0 6px 0 #6a1aa8;
+  }
+  .btn-download {
+    background: linear-gradient(135deg, var(--yellow), var(--orange));
+    box-shadow: 0 6px 0 #c25a1f;
+    color: #3a1a00;
+    display: none;
+  }
+  .btn-retry {
+    background: transparent;
+    color: #d9c8ff;
+    box-shadow: none;
+    text-decoration: underline;
+    font-weight: 700;
+    padding: 10px;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 40px;
+    transform: translateX(-50%) translateY(20px);
+    background: #241238;
+    color: #fff;
+    font-weight: 900;
+    padding: 14px 26px;
+    border-radius: 50px;
+    border: 2px solid var(--pink);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 400px) {
+    .title-main { font-size: 2.1rem; }
+    .card-name { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-deco">
+  <span>👊</span><span>✨</span><span>🌀</span><span>💫</span><span>⚡</span><span>🎲</span><span>💥</span>
+</div>
+
+<div class="container">
+
+  <!-- Title Screen -->
+  <div id="screen-title" class="screen active">
+    <div class="title-wrap">
+      <h1 class="title-main">殴性格診断</h1>
+      <p class="title-sub">
+        8つの質問に答えて、あなたが身内の中で<br>
+        どのタイプに一番近いか診断します。<br>
+        さあ、殴られる覚悟はいいですか?
+      </p>
+      <button class="start-btn" id="start-btn">診断スタート!</button>
+    </div>
+  </div>
+
+  <!-- Quiz Screen -->
+  <div id="screen-quiz" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-label" id="progress-label">Q1 / 8</div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar-fill" style="width: 12.5%;"></div>
+      </div>
+    </div>
+    <div class="question-card" id="question-card">
+      <p class="question-text" id="question-text"></p>
+      <div class="choices" id="choices"></div>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div id="screen-result" class="screen result-screen">
+    <div class="result-header">
+      <div class="gacha-label">★ 診断結果 ★</div>
+    </div>
+
+    <div id="result-card">
+      <div class="card-inner">
+        <span class="card-emoji" id="result-emoji"></span>
+        <p class="card-title-small">殴性格診断</p>
+        <p class="card-name" id="result-name"></p>
+        <div class="card-type-label" id="result-name-tag"></div>
+        <div class="card-tags" id="result-tags"></div>
+        <p class="card-comment" id="result-comment"></p>
+        <p class="card-brand">殴性格診断 #なぐしんだん</p>
+      </div>
+    </div>
+
+    <div class="name-input-wrap">
+      <label for="name-input">お名前(任意・カードには反映されません)</label>
+      <input type="text" id="name-input" placeholder="なまえを入力...">
+    </div>
+
+    <div class="action-btns">
+      <button class="action-btn btn-copy-text" id="btn-copy-text">📋 結果をコピー</button>
+      <button class="action-btn btn-copy-image" id="btn-copy-image">🖼️ 画像をコピー</button>
+      <button class="action-btn btn-download" id="btn-download">💾 画像をダウンロード</button>
+      <button class="action-btn btn-retry" id="btn-retry">もう一度診断する ↻</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---- Member data ----
+  const MEMBERS = {
+    shimadake: {
+      name: "島だけさん",
+      emoji: "🫧",
+      tags: ["マイペース", "のばまん好き", "話たがり", "実は豆腐メンタル", "一人プレイが苦手で聞き役が欲しい"],
+      comment: "喋りながらじゃないと物足りない、実は繊細な聞き役タイプ。",
+      color1: "#ffb6d9", color2: "#ff7ab8"
+    },
+    minano: {
+      name: "ミナノさん",
+      emoji: "😏",
+      tags: ["冷笑", "斜に構えてる", "殴るの楽しい", "意味が分からない"],
+      comment: "鼻で笑って一言で切り捨てる、殴り上手の煽り屋タイプ。",
+      color1: "#b6c9ff", color2: "#6b7dff"
+    },
+    pirinchi: {
+      name: "ピリンチさん",
+      emoji: "🌙",
+      tags: ["ミステリアス", "静か", "かわいい(男)", "ハマったゲームにのめりこむ"],
+      comment: "無言で真顔、でも誰よりものめり込む静かなる求道者タイプ。",
+      color1: "#c6b6ff", color2: "#8a5cff"
+    },
+    guraniu: {
+      name: "ぐらにうさん",
+      emoji: "🌪️",
+      tags: ["善良なキチガイ", "予測不能", "悪気のないマイペースな暴走"],
+      comment: "悪気は一切ないのに、気づいたら全部持っていく暴走機関車タイプ。",
+      color1: "#b6ffe0", color2: "#3ef2c9"
+    },
+    menshin: {
+      name: "面真さん",
+      emoji: "🎯",
+      tags: ["悪質なキチガイ", "計算高い", "狙って人をいじる"],
+      comment: "一番痛いところをちゃんと計算して狙ってくる、確信犯タイプ。",
+      color1: "#ffd9b6", color2: "#ff7a3e"
+    }
+  };
+
+  // ---- Questions ----
+  const QUESTIONS = [
+    {
+      text: "Q1. ゲームで負けた時、どうする?",
+      choices: [
+        { text: "表面は笑ってるけど内心かなり凹む", member: "shimadake" },
+        { text: "相手を煽ってさらに攻撃する", member: "minano" },
+        { text: "黙って無言でリベンジに燃える", member: "pirinchi" },
+        { text: "ルールを都合よく捻じ曲げて言い訳する", member: "menshin" }
+      ]
+    },
+    {
+      text: "Q2. 誰かが変なことを言い出した時、どうする?",
+      choices: [
+        { text: "便乗してさらにおかしなことを言い出す", member: "menshin" },
+        { text: "鼻で笑って一言で切り捨てる", member: "minano" },
+        { text: "無言で真顔のまま聞いている", member: "pirinchi" },
+        { text: "予想の斜め上のリアクションを返す", member: "guraniu" }
+      ]
+    },
+    {
+      text: "Q3. Minecraftでの遊び方は?",
+      choices: [
+        { text: "建築に没頭して喋りながら長時間作業", member: "shimadake" },
+        { text: "他人が作ったものを面白半分で壊す", member: "minano" },
+        { text: "黙々と一人で採掘や探索に没頭する", member: "pirinchi" },
+        { text: "ルールも常識も無視した建築をする", member: "menshin" }
+      ]
+    },
+    {
+      text: "Q4. ゲームは一人でやる派?みんなでやる派?",
+      choices: [
+        { text: "誰かに実況しながらじゃないと物足りない", member: "shimadake" },
+        { text: "一人で黙々とやる方が好き", member: "pirinchi" },
+        { text: "誰かを巻き込んで振り回すのが好き", member: "minano" },
+        { text: "そもそも「一人」という概念が謎", member: "guraniu" }
+      ]
+    },
+    {
+      text: "Q5. Discordのvc、気づいたら何時間経ってる?",
+      choices: [
+        { text: "ずっと喋り続けて気づいたら深夜になってる", member: "shimadake" },
+        { text: "ほとんど喋らないけど誰よりも長くいる", member: "pirinchi" },
+        { text: "気分次第でふらっと来てふらっと落ちる", member: "guraniu" },
+        { text: "変なタイミングで乱入してきて空気を壊す", member: "menshin" }
+      ]
+    },
+    {
+      text: "Q6. 殴ることについてどう思う?",
+      choices: [
+        { text: "楽しくてついやってしまう、加減はあまり考えない", member: "minano" },
+        { text: "悪気なく笑いながら地雷を踏み抜く、結構ガチで痛い", member: "guraniu" },
+        { text: "ちゃんと一番痛いところを計算して狙ってくる", member: "menshin" },
+        { text: "表面上は笑ってるけど、実はそこそこ本気で痛がってる", member: "shimadake" }
+      ]
+    },
+    {
+      text: "Q7. 遊戯王で一番好きなデッキタイプは?",
+      choices: [
+        { text: "罠をじっくり仕込んで、気づいたら詰んでるのが気持ちいい(ラビュリンス)", member: "minano" },
+        { text: "長期戦でじっくり展開しながら、喋りつつ圧倒するのが好き(軍貫)", member: "shimadake" },
+        { text: "とにかく火力全開、真っ向勝負でぶっ飛ばすのが好き(サイバードラゴン)", member: "guraniu" },
+        { text: "ふわふわマイペースに動かしてたら、いつの間にか勝ってた(ふわんだりぃず)", member: "pirinchi" }
+      ]
+    },
+    {
+      text: "Q8. 興味ない話・困った話をどう流す?",
+      choices: [
+        { text: "一応相槌打ちながら聞くけど、実はほぼ聞いてない", member: "pirinchi" },
+        { text: "露骨に「あーはいはい」で流して次の話題に変える", member: "minano" },
+        { text: "話を無理やり自分の得意分野に持っていく", member: "shimadake" },
+        { text: "そもそも話が流れてることに気づかず突っ走る", member: "guraniu" }
+      ]
+    }
+  ];
+
+  // ---- State ----
+  let currentQuestion = 0;
+  const scores = { shimadake: 0, minano: 0, pirinchi: 0, guraniu: 0, menshin: 0 };
+  let resultMemberKey = null;
+
+  // ---- Elements ----
+  const screenTitle = document.getElementById("screen-title");
+  const screenQuiz = document.getElementById("screen-quiz");
+  const screenResult = document.getElementById("screen-result");
+
+  const startBtn = document.getElementById("start-btn");
+  const progressLabel = document.getElementById("progress-label");
+  const progressBarFill = document.getElementById("progress-bar-fill");
+  const questionCard = document.getElementById("question-card");
+  const questionText = document.getElementById("question-text");
+  const choicesWrap = document.getElementById("choices");
+
+  const resultCard = document.getElementById("result-card");
+  const resultEmoji = document.getElementById("result-emoji");
+  const resultName = document.getElementById("result-name");
+  const resultNameTag = document.getElementById("result-name-tag");
+  const resultTags = document.getElementById("result-tags");
+  const resultComment = document.getElementById("result-comment");
+  const nameInput = document.getElementById("name-input");
+
+  const btnCopyText = document.getElementById("btn-copy-text");
+  const btnCopyImage = document.getElementById("btn-copy-image");
+  const btnDownload = document.getElementById("btn-download");
+  const btnRetry = document.getElementById("btn-retry");
+  const toast = document.getElementById("toast");
+
+  function showScreen(el) {
+    [screenTitle, screenQuiz, screenResult].forEach(s => s.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 1800);
+  }
+
+  function resetState() {
+    currentQuestion = 0;
+    Object.keys(scores).forEach(k => scores[k] = 0);
+    resultMemberKey = null;
+    nameInput.value = "";
+    btnDownload.style.display = "none";
+  }
+
+  function renderQuestion() {
+    const q = QUESTIONS[currentQuestion];
+    progressLabel.textContent = `Q${currentQuestion + 1} / ${QUESTIONS.length}`;
+    progressBarFill.style.width = `${((currentQuestion + 1) / QUESTIONS.length) * 100}%`;
+    questionText.textContent = q.text;
+    choicesWrap.innerHTML = "";
+
+    q.choices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.className = "choice-btn";
+      btn.type = "button";
+      btn.textContent = choice.text;
+      btn.addEventListener("click", () => handleAnswer(choice.member, btn));
+      choicesWrap.appendChild(btn);
+    });
+
+    questionCard.classList.remove("card-in");
+    void questionCard.offsetWidth;
+  }
+
+  function handleAnswer(memberKey, btnEl) {
+    Array.from(choicesWrap.children).forEach(b => b.disabled = true);
+    btnEl.classList.add("selected");
+    scores[memberKey] += 1;
+
+    setTimeout(() => {
+      currentQuestion += 1;
+      if (currentQuestion < QUESTIONS.length) {
+        renderQuestion();
+      } else {
+        finishQuiz();
+      }
+    }, 350);
+  }
+
+  function finishQuiz() {
+    let topKey = null;
+    let topScore = -1;
+    let tied = [];
+    Object.keys(scores).forEach(key => {
+      if (scores[key] > topScore) {
+        topScore = scores[key];
+        topKey = key;
+        tied = [key];
+      } else if (scores[key] === topScore) {
+        tied.push(key);
+      }
+    });
+    // Tie-break: random among tied top scorers
+    resultMemberKey = tied[Math.floor(Math.random() * tied.length)];
+
+    renderResult(resultMemberKey);
+    showScreen(screenResult);
+  }
+
+  function renderResult(key) {
+    const m = MEMBERS[key];
+    resultEmoji.textContent = m.emoji;
+    resultName.textContent = m.name;
+    resultNameTag.textContent = `${m.name}タイプ`;
+    resultTags.innerHTML = m.tags.map(t => `#${t}`).join("<br>");
+    resultComment.textContent = m.comment;
+    resultCard.style.background = `linear-gradient(160deg, ${m.color1}, ${m.color2})`;
+
+    resultCard.classList.remove("result-shake");
+    void resultCard.offsetWidth;
+    resultCard.classList.add("result-shake");
+
+    btnDownload.style.display = "none";
+  }
+
+  function buildResultCopyText() {
+    const m = MEMBERS[resultMemberKey];
+    return `【殴性格診断】あなたは「${m.name}」タイプでした!`;
+  }
+
+  async function copyResultText() {
+    const text = buildResultCopyText();
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("コピーしました!");
+    } catch (e) {
+      showToast("コピーに失敗しました");
+    }
+  }
+
+  async function copyResultImage() {
+    if (typeof html2canvas === "undefined") {
+      showToast("画像生成に失敗しました");
+      return;
+    }
+    try {
+      const canvas = await html2canvas(resultCard, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true
+      });
+
+      if (navigator.clipboard && window.ClipboardItem) {
+        canvas.toBlob(async (blob) => {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob })
+            ]);
+            showToast("コピーしました!");
+          } catch (err) {
+            fallbackDownload(canvas);
+          }
+        }, "image/png");
+      } else {
+        fallbackDownload(canvas);
+      }
+    } catch (e) {
+      showToast("画像生成に失敗しました");
+    }
+  }
+
+  function fallbackDownload(canvas) {
+    btnDownload.style.display = "block";
+    btnDownload.onclick = () => {
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "殴性格診断_結果.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("ダウンロードしました!");
+      }, "image/png");
+    };
+    showToast("画像をダウンロードしてください");
+  }
+
+  // ---- Event bindings ----
+  startBtn.addEventListener("click", () => {
+    resetState();
+    showScreen(screenQuiz);
+    renderQuestion();
+  });
+
+  btnCopyText.addEventListener("click", copyResultText);
+  btnCopyImage.addEventListener("click", copyResultImage);
+  btnRetry.addEventListener("click", () => {
+    resetState();
+    showScreen(screenTitle);
+  });
+
+})();
+</script>
+
+</body>
+</html>
